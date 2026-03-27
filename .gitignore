@@ -56,3 +56,7 @@ nunit-*.xml
 # System Files
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+logs/
