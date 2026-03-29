@@ -14,7 +14,7 @@ public class FactFileRepository(IOptions<FactFileRepositoryOptions> options) : I
             Directory.CreateDirectory(directory);
         }
 
-        await File.WriteAllTextAsync(filePath, fact + Environment.NewLine, cancellationToken);
+        await File.AppendAllTextAsync(filePath, fact + Environment.NewLine, cancellationToken);
     }
 }
 
