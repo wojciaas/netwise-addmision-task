@@ -23,12 +23,11 @@ try
         .ReadFrom.Services(services));
 
     builder.Services.AddOpenApi();
-    
     builder.Services.Configure<FactFileRepositoryOptions>(
         builder.Configuration.GetSection(FactFileRepositoryOptions.SectionName)
     );
-
     builder.Services.AddScoped<IFactRepository, FactFileRepository>();
+    builder.Services.AddHttpClient();
 
     var app = builder.Build();
 
@@ -46,9 +45,12 @@ try
     var facts = api.MapGroup("facts")
         .WithTags("Facts");
     
-    facts.MapPost("", async (IFactRepository factRepository, CancellationToken cancellationToken) =>
-    {
-        var client = new HttpClient();
+    facts.MapPost("", async (
+            IFactRepository factRepository,
+            IHttpClientFactory clientFactory, 
+            CancellationToken cancellationToken
+    ) => {
+        var client = clientFactory.CreateClient();
         var response = await client.GetAsync("https://catfact.ninja/fact", cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
