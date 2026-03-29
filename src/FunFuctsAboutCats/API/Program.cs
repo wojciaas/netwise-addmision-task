@@ -17,17 +17,18 @@ try
     Log.Information("Starting web host");
     
     var builder = WebApplication.CreateBuilder(args);
-
+    
+    builder.Services.AddOpenApi();
+    builder.Services
+        .AddOptionsWithValidateOnStart<FactFileRepositoryOptions>()
+        .BindConfiguration(FactFileRepositoryOptions.SectionName)
+        .ValidateDataAnnotations();
+    builder.Services.AddScoped<IFactRepository, FactFileRepository>();
+    builder.Services.AddHttpClient();
+    
     builder.Services.AddSerilog((services, lc) => lc
         .ReadFrom.Configuration(builder.Configuration)
         .ReadFrom.Services(services));
-
-    builder.Services.AddOpenApi();
-    builder.Services.Configure<FactFileRepositoryOptions>(
-        builder.Configuration.GetSection(FactFileRepositoryOptions.SectionName)
-    );
-    builder.Services.AddScoped<IFactRepository, FactFileRepository>();
-    builder.Services.AddHttpClient();
 
     var app = builder.Build();
 

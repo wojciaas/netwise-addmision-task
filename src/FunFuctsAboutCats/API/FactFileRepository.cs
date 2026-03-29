@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Options;
 
 namespace API;
@@ -22,17 +23,7 @@ public class FactFileRepositoryOptions
 {
     public const string SectionName = "FactFileRepository";
 
-    public required string FilePath
-    {
-        get;
-        init
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                throw new ArgumentException("File path cannot be null or whitespace.", nameof(FilePath));
-            }
-            
-            field = value;
-        }
-    }
+    [Required(ErrorMessage = "File path is required.")]
+    [DataType(DataType.Text)]
+    public required string FilePath { get; init; }
 }
