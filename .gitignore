@@ -60,3 +60,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Rider
+.idea/
+*.sln.DotSettings.user

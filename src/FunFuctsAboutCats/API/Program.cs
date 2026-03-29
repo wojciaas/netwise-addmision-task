@@ -1,3 +1,5 @@
+using API;
+using Microsoft.AspNetCore.Mvc;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
@@ -22,12 +24,16 @@ try
         .ReadFrom.Services(services));
 
     builder.Services.AddOpenApi();
+    
+    builder.Services.Configure<FactFileRepositoryOptions>(builder.Configuration.GetSection(FactFileRepositoryOptions.SectionName));
+
+    builder.Services.AddScoped<IFactRepository, FactFileRepository>();
 
     var app = builder.Build();
 
     app.MapOpenApi();
     app.MapScalarApiReference();
-
+    
     app.UseSerilogRequestLogging(options =>
     {
         options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
@@ -59,6 +65,30 @@ try
     
     var facts = api.MapGroup("facts")
         .WithTags("Facts");
+    
+    facts.MapPost("", async (IFactRepository factRepository, CancellationToken cancellationToken) =>
+    {
+        var client = new HttpClient();
+        var response = await client.GetAsync("https://catfact.ninja/fact", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return Results.Problem(
+                "Failed to fetch a cat fact from the external API.", 
+                statusCode: StatusCodes.Status503ServiceUnavailable
+            );
+        }
+        
+        var content = await response.Content.ReadAsStringAsync(cancellationToken: cancellationToken);
+        await factRepository.AddFactAsync(content, cancellationToken);
+        
+        return Results.Created("/api/facts", content);
+    })
+    .WithName("AddFact")
+    .WithSummary("Add a random cat fact to the database")
+    .WithDescription("Fetches a random cat fact from the external API \"https://catfact.ninja/fact\" and adds it to the database.")
+    .Produces(StatusCodes.Status201Created)
+    .Produces<ProblemDetails>(StatusCodes.Status503ServiceUnavailable)
+    .WithTags("Facts");
     
     app.Run();
 }
