@@ -2,7 +2,6 @@ using API;
 using Microsoft.AspNetCore.Mvc;
 using Scalar.AspNetCore;
 using Serilog;
-using Serilog.Events;
 using Serilog.Formatting.Compact;
 
 Log.Logger = new LoggerConfiguration()
@@ -25,7 +24,9 @@ try
 
     builder.Services.AddOpenApi();
     
-    builder.Services.Configure<FactFileRepositoryOptions>(builder.Configuration.GetSection(FactFileRepositoryOptions.SectionName));
+    builder.Services.Configure<FactFileRepositoryOptions>(
+        builder.Configuration.GetSection(FactFileRepositoryOptions.SectionName)
+    );
 
     builder.Services.AddScoped<IFactRepository, FactFileRepository>();
 
@@ -33,29 +34,8 @@ try
 
     app.MapOpenApi();
     app.MapScalarApiReference();
-    
-    app.UseSerilogRequestLogging(options =>
-    {
-        options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
-        {
-            diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
-            diagnosticContext.Set("UserAgent", httpContext.Request.Headers.UserAgent.ToString());
-        };
-
-        options.GetLevel = (httpContext, elapsed, _) =>
-        {
-            if (httpContext.Request.Path.StartsWithSegments("/api/health"))
-            {
-                return LogEventLevel.Verbose;
-            }
-
-            return elapsed > 500
-                ? LogEventLevel.Warning
-                : LogEventLevel.Information;
-        };
-    });
-    
-    app.UseHttpsRedirection();
+    app.RegisterRequestLogging();
+    app.RegisterExceptionHandler();
 
     var api = app.MapGroup("api")
         .WithTags("Fun facts about cats");
